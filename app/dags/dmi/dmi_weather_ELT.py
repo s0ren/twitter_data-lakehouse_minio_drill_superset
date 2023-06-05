@@ -82,7 +82,7 @@ def extract_weather_stations(**kwargs):
     global api_key, DMI_URL
     service = '/metObs/collections/station/items'
     
-    data_dir = "data"
+    data_dir = "."
     data_name = "dmi_staions"
 
     page_size = 100
@@ -128,7 +128,7 @@ def extract_metobs(**kwargs):
 
     #return
 
-    data_dir = "data"
+    data_dir = "."
     data_name = "dmi_metobs"
 
     page_size = 500

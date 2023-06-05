@@ -82,7 +82,7 @@ def setups():
     There is an example `.env.example`, withou real sensible values."""
     global URL, data_dir, page_size
     URL = 'https://api.energidataservice.dk/'
-    data_dir = 'data'
+    data_dir = '.'
     page_size = 1000
 
 
