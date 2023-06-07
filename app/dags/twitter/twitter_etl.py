@@ -8,6 +8,8 @@ from airflow.decorators import dag, task
 @task
 def get_twitter_data():
     TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
+    TWITTER_BEARER_TOKEN = r'''AAAAAAAAAAAAAAAAAAAAACjhnwEAAAAAtisl%2Fcu4FKa9ecYu%2F4eKQjS%2Bmcs%3DNjzKBsnOTpYaJMf6N1eFnJzvT2hQspcBiDPKJuPjlaH3aAMpPf'''
+    print(f"TWITTER_BEARER_TOKEN: {TWITTER_BEARER_TOKEN}")
 
     # Get tweets using Twitter API v2 & Bearer Token
     BASE_URL = "https://api.twitter.com/2/tweets/search/recent"
@@ -17,6 +19,8 @@ def get_twitter_data():
     url = f"{BASE_URL}?query=from:{USERNAME}&tweet.fields={','.join(FIELDS)}&expansions=author_id&max_results=50"
     response = requests.get(url=url, headers={"Authorization": f"Bearer {TWITTER_BEARER_TOKEN}"})
     response_content = response.json()
+
+    print(response_content)
 
     data = response_content["data"]
     includes = response_content["includes"]
