@@ -129,6 +129,7 @@ def write_to_bucket(eProdex_jsons):
     import pandas as pd
     from minio import Minio
     from io import BytesIO
+    import os
 
     # MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
     MINIO_BUCKET_NAME = 'prodex'
@@ -167,6 +168,7 @@ def write_to_bucket(eProdex_jsons):
         client.put_object(
             MINIO_BUCKET_NAME, filename, data=BytesIO(file_data), length=len(file_data), content_type="application/csv"
         )
+        os.remove(prodex_json)
 
 
 @dag( 
@@ -242,6 +244,7 @@ def electrical_power_gross_back():
             'data_interval_start' : datetime.fromisoformat("2020-12-31T23:00:00+00:00"),
         }
         eProdex_jsons = extract_ElectricityProdex_back(**args)
+    write_to_bucket(eProdex_jsons)
 
 
 
