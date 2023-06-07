@@ -49,7 +49,7 @@ def pull_data(service: str, data_dir: str, data_name: str, data_timedate: dateti
             #print(r.headers)
             print(r.text)
             print(params)
-            raise Exception('hhtp not 200 ok', r.text)
+            raise Exception('http not 200 ok', r.text)
             break
         else:
             rjson = r.json() # Extract JSON object
@@ -60,7 +60,7 @@ def pull_data(service: str, data_dir: str, data_name: str, data_timedate: dateti
         
         if len(rjson['records']) > 0:
             page_index += 1
-            time_stamp = data_timedate.isoformat(timespec='seconds')
+            time_stamp = data_timedate.isoformat(timespec='seconds').replace(':', '.')
             fName = f'{data_dir}/{data_name}_{time_stamp}_#{page_index}.json'
             with open(fName, "w+") as f:
                 f.write(r.text)
@@ -82,9 +82,9 @@ def setups():
     There is an example `.env.example`, withou real sensible values."""
     global URL, data_dir, page_size
     URL = 'https://api.energidataservice.dk/'
-    data_dir = '.'
+    data_dir = './dags/EnergiDataService/data'
     page_size = 1000
-
+    
 
 default_task_args = {
     'retries' : 10,
@@ -119,10 +119,60 @@ def extract_ElectricityProdex(**kwargs):
     return pull_data(service, data_dir, 'ElectricityProdex', ts, page_size, params)
     #https://api.energidataservice.dk/dataset/ElectricityProdex5MinRealtime?offset=0&start=2022-12-26T00:00&end=2022-12-27T00:00&sort=Minutes5UTC%20DESC&timezone=dk
 
+@task
+def write_to_bucket(eProdex_jsons):
+    # tweet_list, batchDatetime_str, batchId = data
+    # batchDatetime = datetime.strptime(batchDatetime_str, "%Y-%m-%d %H:%M:%S")
+
+
+
+    import pandas as pd
+    from minio import Minio
+    from io import BytesIO
+
+    # MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
+    MINIO_BUCKET_NAME = 'prodex'
+    MINIO_ROOT_USER = os.getenv("MINIO_ROOT_USER")
+    MINIO_ROOT_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD")
+
+    # MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
+    # MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY')
+
+    MINIO_ACCESS_KEY = os.getenv('MINIO_ROOT_USER')
+    MINIO_SECRET_KEY = os.getenv('MINIO_ROOT_PASSWORD')
+
+    client = Minio("minio:9000", access_key=MINIO_ACCESS_KEY, secret_key=MINIO_SECRET_KEY, secure=False)
+
+    # print(client.list_buckets())
+
+    # Make MINIO_BUCKET_NAME if not exist.
+    found = client.bucket_exists(MINIO_BUCKET_NAME)
+    if not found:
+        client.make_bucket(MINIO_BUCKET_NAME)
+    else:
+        print(f"Bucket '{MINIO_BUCKET_NAME}' already exists!")
+
+    for prodex_json in eProdex_jsons:
+        
+        # df = pd.DataFrame(tweet_list)
+        # file_data = df.to_parquet(index=False)
+        df = pd.read_json(prodex_json)
+        file_data = df.to_parquet(index=False)
+
+        # Put parquet data in the bucket
+        filename = (
+            # f"tweets/{batchDatetime.strftime('%Y/%m/%d')}/elon_tweets_{batchDatetime.strftime('%H%M%S')}_{batchId}.parquet"
+            f"predex/{prodex_json}.parquet"
+        )
+        client.put_object(
+            MINIO_BUCKET_NAME, filename, data=BytesIO(file_data), length=len(file_data), content_type="application/csv"
+        )
+
+
 @dag( 
     dag_id='electrical_power_gross',
     schedule=timedelta(minutes=5),
-    start_date=pendulum.datetime(2022, 12, 1, 0, 0, 0, tz="Europe/Copenhagen"),
+    start_date=pendulum.datetime(2023, 6, 1, 0, 0, 0, tz="Europe/Copenhagen"),
     catchup=True,
     max_active_tasks=5,
     max_active_runs=5,
@@ -135,6 +185,7 @@ def electrical_power_gross():
         eProdex_jsons = extract_ElectricityProdex()
     else: # more or less test mode
         eProdex_jsons = extract_ElectricityProdex(ts=datetime.now().isoformat())
+    write_to_bucket(eProdex_jsons)
 
 @task
 def extract_ElectricityProdex_back(**kwargs):
@@ -172,7 +223,7 @@ def extract_ElectricityProdex_back(**kwargs):
 @dag( 
     dag_id='electrical_power_gross_back',
     schedule='@monthly',
-    end_date=pendulum.datetime(2022, 12, 28, 0, 0, 0, tz="Europe/Copenhagen"),
+    #end_date=pendulum.datetime(2023, 6, 1, 0, 0, 0, tz="Europe/Copenhagen"),
     start_date=pendulum.datetime(2014, 12, 31, 23, 0, 0, tz="Europe/Copenhagen"),
     catchup=True,
     max_active_tasks=5,
