@@ -3,7 +3,7 @@
 # !app/dags/**/data
 # app/dags/**/data/*
 app/logs
-#**/data/*
+**/data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -167,3 +167,5 @@ cython_debug/
 #.idea/
 
 logs/*
+app/dags/EnergiDataService/dataprodex_live.db
+eProdex_jsons_1.zip
