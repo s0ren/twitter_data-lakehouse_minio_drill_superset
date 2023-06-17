@@ -189,7 +189,7 @@ def electrical_power_gross():
         eProdex_jsons = extract_ElectricityProdex()
     else: # more or less test mode
         eProdex_jsons = extract_ElectricityProdex(ts=datetime.now().isoformat())
-    write_to_bucket(eProdex_jsons, 'live')
+    # write_to_bucket(eProdex_jsons, 'live')
 
 @task
 def extract_ElectricityProdex_back(**kwargs):
@@ -219,7 +219,7 @@ def extract_ElectricityProdex_back(**kwargs):
 
     #print(params['start'], params['end'])
 
-    return pull_data(service, data_dir, 'ElectricityProdex_back', ts, page_size, params)
+    return pull_data(service, data_dir+'/back', 'ElectricityProdex_back', ts, page_size, params)
     #return 'dummy'
     #https://api.energidataservice.dk/dataset/ElectricityProdex5MinRealtime?offset=0&start=2022-12-26T00:00&end=2022-12-27T00:00&sort=Minutes5UTC%20DESC&timezone=dk
 
@@ -246,7 +246,7 @@ def electrical_power_gross_back():
             'data_interval_start' : datetime.fromisoformat("2020-12-31T23:00:00+00:00"),
         }
         eProdex_jsons = extract_ElectricityProdex_back(**args)
-    write_to_bucket(eProdex_jsons, 'back')
+    # write_to_bucket(eProdex_jsons, 'back')
 
 
 
