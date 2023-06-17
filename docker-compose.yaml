@@ -92,7 +92,7 @@ services:
       - '9000:9000'
       - '9090:9090'
     volumes:
-      - minio-bucket-volume:/data
+      - './data:/data'
     env_file:
       - .env
     command: server --console-address ":9090" /data
